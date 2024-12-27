@@ -8,7 +8,7 @@ import main.GamePanel;
 public class Entity {
     GamePanel gp;
 
-    public int worldX, worldY;
+    public int worldX, worldY; // spawn position
     public int speed;
 
     public BufferedImage up1, up2, down1, down2, left1, left2, right1, right2;
@@ -44,4 +44,10 @@ public class Entity {
     public void draw(Graphics2D g2) {
         // Default behavior (can be overridden)
     }
+
+    public void attackPlayer() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'attackPlayer'");
+    }
+
 }

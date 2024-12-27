@@ -15,44 +15,43 @@ import javax.swing.JPanel;
 
 import entity.Entity;
 import entity.Player;
-import entity.Slime; // Import Slime class
+import entity.Slime;
 import tile.TileManager;
 
 public class GamePanel extends JPanel implements Runnable, KeyListener {
 
-    // SCREEN SETTINGS
-    final int originalTileSize = 32; // 32x32 size
+    // Screen and World Settings
+    final int originalTileSize = 32; // 32x32 tiles
     final int scale = 3;
-
-    public final int tileSize = originalTileSize * scale; // 96x96 tile
+    public final int tileSize = originalTileSize * scale; // 96x96 pixels
     public final int maxScreenCol = 16;
     public final int maxScreenRow = 12;
     public final int screenWidth = tileSize * maxScreenCol; // 1536 pixels
     public final int screenHeight = tileSize * maxScreenRow; // 1152 pixels
-
-    // WORLD SETTINGS
     public final int maxWorldCol = 112;
     public final int maxWorldRow = 84;
-    public final int WorldWidth = tileSize * maxWorldCol;
+    public final int worldWidth = tileSize * maxWorldCol;
     public final int worldHeight = tileSize * maxWorldRow;
 
+    // Game Components
     TileManager tileM = new TileManager(this);
     KeyHandler keyH = new KeyHandler();
-    Thread gameThread;
+    public Thread gameThread;
     public CollisionChecker cChecker = new CollisionChecker(this);
-    public Player player; // Initialize later based on selection
+    public Player player; // Initialized after hero selection
     public UI ui = new UI(this);
     int FPS = 60;
 
-    // List to hold monsters
+    // Entities
     public List<Entity> monsters = new ArrayList<>();
 
-    // Game state
+    // Game States
     public final int STATE_SELECTION = 0;
     public final int STATE_PLAYING = 1;
+    public final int STATE_GAME_OVER = 2;
     public int gameState = STATE_SELECTION; // Start with hero selection
 
-    // Hero selection
+    // Hero Selection
     List<String> heroes = Arrays.asList("Sorceress", "Warrior");
     int selectedHeroIndex = 0;
 
@@ -69,26 +68,37 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         setupMonsters();
     }
 
-    public void startGameThread() {
+    public void setupMonsters() {
+        // Example: Spawn two Slimes at different locations
+        Slime slime1 = new Slime(this, 10, 10);
+        monsters.add(slime1);
 
+        Slime slime2 = new Slime(this, 15, 20);
+        monsters.add(slime2);
+
+        // Add more Slimes as needed
+    }
+
+    public void startGameThread() {
         gameThread = new Thread(this);
         gameThread.start();
     }
 
     @Override
     public void run() {
-
-        double drawInterval = 1000000000 / FPS;
+        double drawInterval = 1000000000 / FPS; // Time between frames in nanoseconds
         double nextDrawTime = System.nanoTime() + drawInterval;
 
         while (gameThread != null) {
-
+            // 1. Update: Update information such as character positions
             update();
 
+            // 2. Draw: Draw the screen with the updated information
             repaint();
 
+            // 3. Sleep: Sleep to maintain the desired FPS
             try {
-                double remainingTime = (nextDrawTime - System.nanoTime()) / 1000000;
+                double remainingTime = (nextDrawTime - System.nanoTime()) / 1000000; // Convert to milliseconds
                 if (remainingTime < 0) {
                     remainingTime = 0;
                 }
@@ -99,7 +109,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
         }
     }
 
@@ -113,7 +122,6 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 monster.update();
             }
         }
-
     }
 
     @Override
@@ -135,11 +143,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             }
 
             ui.draw(g2);
-            // tileM before player and monsters to ensure background tiles are rendered first
+        } else if (gameState == STATE_GAME_OVER) {
+            drawGameOver(g2);
         }
 
         g2.dispose();
-
     }
 
     private void drawHeroSelection(Graphics2D g2) {
@@ -158,7 +166,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         int heroBoxWidth = 200;
         int heroBoxHeight = 200;
         int padding = 100;
-        int startX = padding;	
+        int startX = padding;
         int startY = 200;
         int gapX = 300; // Horizontal gap between hero boxes
         int gapY = 300; // Vertical gap between hero boxes (for multiple rows)
@@ -187,6 +195,25 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         }
     }
 
+    private void drawGameOver(Graphics2D g2) {
+        // Draw game over screen
+        g2.setColor(new Color(0, 0, 0, 150)); // Semi-transparent black
+        g2.fillRect(0, 0, screenWidth, screenHeight);
+
+        // Draw "Game Over" text
+        g2.setColor(Color.RED);
+        g2.setFont(new Font("Arial", Font.BOLD, 100));
+        String text = "GAME OVER";
+        int textWidth = g2.getFontMetrics().stringWidth(text);
+        g2.drawString(text, (screenWidth - textWidth) / 2, screenHeight / 2);
+
+        // Optionally, add instructions to restart or exit
+        g2.setFont(new Font("Arial", Font.PLAIN, 40));
+        String restartText = "Press Enter to Restart";
+        int restartWidth = g2.getFontMetrics().stringWidth(restartText);
+        g2.drawString(restartText, (screenWidth - restartWidth) / 2, screenHeight / 2 + 100);
+    }
+
     @Override
     public void keyPressed(KeyEvent e) {
         if (gameState == STATE_SELECTION) {
@@ -204,6 +231,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             }
         } else if (gameState == STATE_PLAYING) {
             keyH.keyPressed(e); // Delegate to KeyHandler for game controls
+        } else if (gameState == STATE_GAME_OVER) {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                restartGame();
+            }
         }
     }
 
@@ -229,16 +260,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         }
     }
 
-    // Define the setupMonsters() method
-    private void setupMonsters() {
-        // Example: Spawn a Slime at column 10, row 10
-        Slime slime1 = new Slime(this, 10, 10);
-        monsters.add(slime1);
+    public void restartGame() {
+        // Reset player
+        player = null;
 
-        // Add more Slimes as needed
-        Slime slime2 = new Slime(this, 15, 20);
-        monsters.add(slime2);
+        // Reset monsters
+        monsters.clear();
+        setupMonsters();
 
-        // You can spawn Slimes based on specific conditions or locations
+        // Reset game state
+        gameState = STATE_SELECTION;
+
+        // Reset UI elements if necessary
     }
 }

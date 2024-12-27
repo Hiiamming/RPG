@@ -14,7 +14,7 @@ import main.GamePanel;
 public class TileManager {
     
     GamePanel gp;
-    public Tile[] tile;
+    public Tile[] tile; // number of blocks
     public int mapTileNum[][];
     
     public TileManager(GamePanel gp)  {

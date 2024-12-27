@@ -46,7 +46,7 @@ public class Player extends Entity {
                 speed = 10;
                 direction = "left";
                 // Player status
-                maxLife = 1000000;
+                maxLife = 1000;
                 life = maxLife; 
                 atk = 3;
                 def = 2;
@@ -210,14 +210,8 @@ public class Player extends Entity {
 
         for (Entity monster : gp.monsters) {
             if (gp.cChecker.checkEntityCollision(this, monster)) {
-                // Handle collision (e.g., take damage, attack, etc.)
-                System.out.println("Collided with a monster!");
-                // Example: Decrease player's life
-                this.life -= monster.atk;
-                if (this.life <= 0) {
-                    this.life = 0;
-                    // Handle player death
-                }
+                // Monster attacks the player
+                monster.attackPlayer(); 
             }
         }
 
@@ -231,6 +225,11 @@ public class Player extends Entity {
                 spriteNum = 1;
             }
             spriteCounter = 0;
+        }
+
+        // check if the player is dead
+        if (this.life <= 0) {
+            die();
         }
     }
 
@@ -263,4 +262,36 @@ public class Player extends Entity {
         }
 
     }
+
+    // public void receiveDamage(int damage) {
+    //         // Apply damage considering player's defense
+    //         int actualDamage = damage - this.def;
+    //         if (actualDamage < 0) {
+    //             actualDamage = 0;
+    //         }
+    //         life -= actualDamage;
+    //         if (life < 0) {
+    //             life = 0;
+    //         }
+    //         System.out.println("Player receives " + actualDamage + " damage! Current life: " + life);
+
+
+    //         if (life <= 0) {
+    //             die();
+    //     }
+    // }
+
+    private void die() {
+        System.out.println("Player has died! Game Over.");
+        // Play death sound
+        // soundManager.playSound("/sounds/player_death.wav");
+
+        // Stop the game thread
+        gp.gameThread = null;
+
+        // Display game over screen
+        gp.gameState = gp.STATE_GAME_OVER;
+    }
+
+    
 }
