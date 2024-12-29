@@ -9,6 +9,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JPanel;
@@ -32,6 +33,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     public final int maxWorldRow = 84;
     public final int worldWidth = tileSize * maxWorldCol;
     public final int worldHeight = tileSize * maxWorldRow;
+    public int gameTime = 0; // Track elapsed time in frames
 
     // Game Components
     TileManager tileM = new TileManager(this);
@@ -68,12 +70,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         setupMonsters();
     }
 
+
+    // spawn monsters
     public void setupMonsters() {
         // Example: Spawn two Slimes at different locations
         Slime slime1 = new Slime(this, 10, 10);
         monsters.add(slime1);
 
-        Slime slime2 = new Slime(this, 15, 20);
+        Slime slime2 = new Slime(this, 11, 11);
         monsters.add(slime2);
 
         // Add more Slimes as needed
@@ -106,6 +110,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 Thread.sleep((long) remainingTime);
                 nextDrawTime += drawInterval;
 
+                gameTime++; // Increment game time
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -113,13 +119,20 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     }
 
     public void update() {
-
         if (gameState == STATE_PLAYING && player != null) {
             player.update();
-
+    
             // Update all monsters
-            for (Entity monster : monsters) {
+            Iterator<Entity> iterator = monsters.iterator();
+            while (iterator.hasNext()) {
+                Entity monster = iterator.next();
                 monster.update();
+    
+                // Remove dead monsters
+                if (monster.isDead) {
+                    iterator.remove();
+                    System.out.println("Monster removed from the list!"); // Debugging
+                }
             }
         }
     }

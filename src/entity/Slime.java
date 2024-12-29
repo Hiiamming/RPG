@@ -253,4 +253,12 @@ public class Slime extends Entity {
             g2.fillOval(screenX, screenY, gp.tileSize, gp.tileSize);
         }
     }
+    
+    @Override
+    public void die() {
+        System.out.println("Slime has died!");
+        isDead = true;
+        // Remove the slime from the game
+        // gp.monsters.remove(this);
+    }
 }

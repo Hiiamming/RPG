@@ -28,5 +28,6 @@ public class UI {
         playTime += (double)1/60;
         g2.drawString("Play Time: " + df.format(playTime), 100, 150);
         g2.drawString("Health: " + gp.player.life + "/" + gp.player.maxLife, 100, 200);
+        g2.drawString("Mana: " + gp.player.Mana + "/" + gp.player.maxMana, 100, 250);
     }
 }

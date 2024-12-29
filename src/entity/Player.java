@@ -8,6 +8,10 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import main.GamePanel;
 import main.KeyHandler;
 
@@ -18,6 +22,18 @@ public class Player extends Entity {
     public final int screenY;
 
     private String heroType;
+    public boolean isAttacking = false;
+    public int attackRange = 100;
+
+    // mana
+    public int manaRegen = 1; // Mana regeneration per second
+
+    // cooldown
+    public boolean skillCooldown = false; // Whether the skill is on cooldown
+    public int skillCooldownDuration = 60; // Cooldown duration in frames (1 second at 60 FPS)
+    public int lastSkillTime = 0; // Time when the skill was last used
+
+    public List<Projectile> projectiles = new ArrayList<>();
 
     public Player(GamePanel gp, KeyHandler keyH, String heroType) {
         super(gp);  
@@ -27,7 +43,7 @@ public class Player extends Entity {
         screenX = gp.screenWidth / 2 - (gp.tileSize / 2);
         screenY = gp.screenHeight / 2 - (gp.tileSize / 2 );
 
-        solidArea = new Rectangle(0, 0, 96, 96);
+        solidArea = new Rectangle();
         solidArea.x = 16;
         solidArea.y = 32;
         solidArea.width = 64;
@@ -43,14 +59,14 @@ public class Player extends Entity {
             case "sorceress":
                 worldX = gp.tileSize * 3;
                 worldY = gp.tileSize * 3;
-                speed = 10;
+                speed = 15;
                 direction = "left";
                 // Player status
-                maxLife = 1000;
+                maxLife = 100000;
                 life = maxLife; 
                 atk = 3;
                 def = 2;
-                maxMana = 3;
+                maxMana = 100;
                 Mana = maxMana;
                 maxExp = 10;
                 exp = 0;
@@ -206,7 +222,32 @@ public class Player extends Entity {
                     worldX += speed;
                     break;
             }
+            
         }
+
+        if (keyH.attackPressed) {
+            isAttacking = true;
+            attackMonster();
+        } else {
+            isAttacking = false;
+        }
+
+        if (keyH.shootPressed) {
+            shootProjectile();
+        }
+
+        // Update projectiles
+        for (Projectile projectile : projectiles) {
+            projectile.update();
+        }
+
+        // Remove inactive projectiles
+        projectiles.removeIf(projectile -> !projectile.alive);
+        
+        // Regenerate mana
+        regenerateMana();
+
+        updateSkillCooldown();  
 
         for (Entity monster : gp.monsters) {
             if (gp.cChecker.checkEntityCollision(this, monster)) {
@@ -231,6 +272,82 @@ public class Player extends Entity {
         if (this.life <= 0) {
             die();
         }
+    }
+
+    public void shootProjectile() {
+        int manaCost = 100; // Mana cost for shooting a projectile
+
+        if (Mana >= manaCost && !skillCooldown) {
+            // Create a new projectile at the player's position and direction
+            Projectile projectile = new Projectile(gp, worldX, worldY, direction);
+            projectiles.add(projectile);
+
+            // Consume mana
+            Mana -= manaCost;
+            System.out.println("Mana used: " + manaCost + ". Remaining mana: " + Mana);
+
+            // Start cooldown
+            startCooldown();
+        } else if (skillCooldown) {
+            System.out.println("Skill is on cooldown!");
+        } else {
+            System.out.println("Not enough mana to shoot!");
+        }
+    }
+
+    public void regenerateMana() {
+        if (Mana < maxMana) {
+            Mana += manaRegen;
+            if (Mana > maxMana) {
+                Mana = maxMana;
+            }
+            System.out.println("Mana regenerated: " + manaRegen + ". Current mana: " + Mana);
+        }
+    }
+
+    public void startCooldown() {
+        skillCooldown = true;
+        lastSkillTime = gp.gameTime; // Record the current game time
+    }
+
+    public void updateSkillCooldown() {
+        if (skillCooldown) {
+            // Check if the cooldown duration has passed
+            if (gp.gameTime - lastSkillTime >= skillCooldownDuration) {
+                skillCooldown = false; // Reset cooldown
+                System.out.println("Skill cooldown ended!");
+            }
+        }
+    }
+
+    public void attackMonster() {
+        Iterator<Entity> iterator = gp.monsters.iterator();
+        while (iterator.hasNext()) {
+            Entity monster = iterator.next();
+            double distance = getDistance(this.worldX, this.worldY, monster.worldX, monster.worldY);
+            if (distance <= attackRange) {
+                monster.receiveDamage(this.atk);
+                // If the monster dies, it will be removed from the list in its die() method
+            }
+        }
+    }
+
+    private double getDistance(int x1, int y1, int x2, int y2) {
+        double dx = (double) (x1 - x2);
+        double dy = (double) (y1 - y2);
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    public void die() {
+        System.out.println("Player has died! Game Over.");
+        // Play death sound
+        // soundManager.playSound("/sounds/player_death.wav");
+
+        // Stop the game thread
+        gp.gameThread = null;
+
+        // Display game over screen
+        gp.gameState = gp.STATE_GAME_OVER;
     }
 
     public void draw(Graphics2D g2) {
@@ -261,37 +378,11 @@ public class Player extends Entity {
             g2.fillRect(screenX, screenY, gp.tileSize, gp.tileSize);
         }
 
+        // Draw projectiles
+        for (Projectile projectile : projectiles) {
+            projectile.draw(g2);
+        }
+
     }
-
-    // public void receiveDamage(int damage) {
-    //         // Apply damage considering player's defense
-    //         int actualDamage = damage - this.def;
-    //         if (actualDamage < 0) {
-    //             actualDamage = 0;
-    //         }
-    //         life -= actualDamage;
-    //         if (life < 0) {
-    //             life = 0;
-    //         }
-    //         System.out.println("Player receives " + actualDamage + " damage! Current life: " + life);
-
-
-    //         if (life <= 0) {
-    //             die();
-    //     }
-    // }
-
-    private void die() {
-        System.out.println("Player has died! Game Over.");
-        // Play death sound
-        // soundManager.playSound("/sounds/player_death.wav");
-
-        // Stop the game thread
-        gp.gameThread = null;
-
-        // Display game over screen
-        gp.gameState = gp.STATE_GAME_OVER;
-    }
-
     
 }
