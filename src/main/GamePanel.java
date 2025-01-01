@@ -80,6 +80,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         Slime slime2 = new Slime(this, 11, 11);
         monsters.add(slime2);
 
+        Slime slime3 = new Slime(this, 9, 10);
+        monsters.add(slime3);
+
+        Slime slime4 = new Slime(this, 9, 11);
+        monsters.add(slime4);
+
         // Add more Slimes as needed
     }
 

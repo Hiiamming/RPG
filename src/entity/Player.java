@@ -131,6 +131,7 @@ public class Player extends Entity {
                     up2 = ImageIO.read(getClass().getResourceAsStream("/player/sorceress_up_2.png"));
                     down1 = ImageIO.read(getClass().getResourceAsStream("/player/sorceress_down_1.png"));
                     down2 = ImageIO.read(getClass().getResourceAsStream("/player/sorceress_down_2.png"));
+                    down3 = ImageIO.read(getClass().getResourceAsStream("/player/sorceress_down_3.png"));
                     left1 = ImageIO.read(getClass().getResourceAsStream("/player/sorceress_left_1.png"));
                     left2 = ImageIO.read(getClass().getResourceAsStream("/player/sorceress_left_2.png"));
                     right1 = ImageIO.read(getClass().getResourceAsStream("/player/sorceress_right_1.png"));
@@ -328,6 +329,9 @@ public class Player extends Entity {
             if (distance <= attackRange) {
                 monster.receiveDamage(this.atk);
                 // If the monster dies, it will be removed from the list in its die() method
+                if (monster.isDead) {
+                    gainExp(monster.maxExp); // Gain experience when monster dies
+                }
             }
         }
     }
@@ -359,7 +363,7 @@ public class Player extends Entity {
                 image = (spriteNum == 1) ? up1 : up2;
                 break;
             case "down":
-                image = (spriteNum == 1) ? down1 : down2;
+                image = (spriteNum == 1) ? down1 : down3;
                 break;
             case "left":
                 image = (spriteNum == 1) ? left1 : left2;

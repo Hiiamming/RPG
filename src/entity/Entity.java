@@ -11,7 +11,7 @@ public class Entity {
     public int worldX, worldY; // spawn position
     public int speed;
 
-    public BufferedImage up1, up2, up3, down1, down2, left1, left2, right1, right2;
+    public BufferedImage up1, up2, down3, down1, down2, left1, left2, right1, right2;
     public String direction;
 
     public int spriteCounter = 0;
@@ -71,6 +71,26 @@ public class Entity {
         System.out.println("Entity has died!");
         isDead = true;
         // Handle death (e.g., remove from game, play death animation, etc.)
+    }
+
+    public void gainExp(int amount) {
+        exp += amount;
+        if (exp >= maxExp) {
+            levelUp();
+        }
+    }
+
+    public void levelUp() {
+        level++;
+        exp = 0;
+        maxExp = (int) (maxExp * 1.5); // Increase max experience needed for next level
+        maxLife += 10; // Increase max life
+        life = maxLife; // Heal to full life
+        atk += 2; // Increase attack
+        def += 1; // Increase defense
+        maxMana += 5; // Increase max mana
+        Mana = maxMana; // Restore mana
+        System.out.println("Level Up! You are now level " + level);
     }
 
 }
