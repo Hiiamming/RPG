@@ -1,89 +1,133 @@
 package entity;
 
+import main.GamePanel;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-
+import java.io.IOException;
 import javax.imageio.ImageIO;
 
-import main.GamePanel;
+public class Projectile {
+    private GamePanel gp;
+    private Hero shooter;
+    private Direction direction;
+    private int speed = 10;
+    private int worldX, worldY;
+    private BufferedImage image;
+    private boolean active = true;
+    private int range = 300; // Maximum distance in pixels
+    private int distanceTravelled = 0;
 
-public class Projectile extends Entity {
-
-    GamePanel gp;
-    public boolean alive = true; // Whether the projectile is active
-    public BufferedImage image;
-
-    public Projectile(GamePanel gp, int startX, int startY, String direction) {
-        super(gp);
-        this.gp = gp;
-        this.worldX = startX;
-        this.worldY = startY;
-        this.direction = direction;
-        this.speed = 10; // Speed of the projectile
+    // Define projectile dimensions
+    private int width = 16;
+    private int height = 16;
+    private Rectangle solidArea;
+    
+        public Projectile(GamePanel gp, Hero shooter, Direction direction) {
+            this.gp = gp;
+            this.shooter = shooter;
+            this.direction = direction;
+            this.worldX = shooter.getWorldX() + shooter.getSolidArea().x + shooter.getSolidArea().width / 2 - width / 2;
+            this.worldY = shooter.getWorldY() + shooter.getSolidArea().y + shooter.getSolidArea().height / 2 - height / 2;
+            this.solidArea = new Rectangle(0, 0, 16, 16); // Adjust collision area
+            // Ensure solidArea is not null before accessing it
+            if (shooter.getSolidArea() != null) {
+                this.worldX = shooter.getWorldX() + shooter.getSolidArea().x + shooter.getSolidArea().width / 2 - width / 2;
+                this.worldY = shooter.getWorldY() + shooter.getSolidArea().y + shooter.getSolidArea().height / 2 - height / 2;
+            } else {
+                // Fallback position if solidArea is null
+                this.worldX = shooter.getWorldX();
+                this.worldY = shooter.getWorldY();
+            }
+    
         loadImage();
-        setSolidArea();
     }
 
-    public void loadImage() {
+    private void loadImage() {
         try {
-            image = ImageIO.read(getClass().getResourceAsStream("/projectile/projectile.png")); // Load projectile image
-        } catch (Exception e) {
+            // Assuming projectiles are named based on direction
+            String imagePath = "/projectiles/" + direction.toString().toLowerCase() + ".png";
+            image = ImageIO.read(getClass().getResourceAsStream(imagePath));
+        } catch (IOException e) {
             e.printStackTrace();
+            // Fallback to a default projectile image if specific one not found
+            try {
+                image = ImageIO.read(getClass().getResourceAsStream("/projectiles/default.png"));
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 
-    public void setSolidArea() {
-        solidArea = new Rectangle(0, 0, 16, 16); // Set the collision area of the projectile
-    }
-
-    @Override
     public void update() {
-        // Move the projectile based on its direction
-        switch (direction) {
-            case "up":
+        switch(direction) {
+            case UP:
                 worldY -= speed;
                 break;
-            case "down":
+            case DOWN:
                 worldY += speed;
                 break;
-            case "left":
+            case LEFT:
                 worldX -= speed;
                 break;
-            case "right":
+            case RIGHT:
                 worldX += speed;
                 break;
         }
 
-        // Check if the projectile is out of bounds
-        if (worldX < 0 || worldX > gp.worldWidth || worldY < 0 || worldY > gp.worldHeight) {
-            alive = false; // Deactivate the projectile
+        // Clamp position to game world bounds
+        worldX = Math.max(0, Math.min(worldX, gp.worldWidth - width));
+        worldY = Math.max(0, Math.min(worldY, gp.worldHeight - height));
+
+        distanceTravelled += speed;
+
+        // Check collision with tiles
+        gp.cChecker.checkProjectileCollision(this);
+        if (collisionDetected()) {
+            active = false;
         }
 
-            // Check for collisions with monsters
-        for (Entity monster : gp.monsters) {
-            if (gp.cChecker.checkEntityCollision(this, monster)) {
-                monster.receiveDamage(5); // Deal damage to the monster
-                alive = false; // Deactivate the projectile
+        // Check collision with monsters
+        for(Entity monster : gp.monsters) {
+            if(monster.isDead()) continue; // Skip dead monsters
+            if(gp.cChecker.checkEntityCollision(this, monster)) {
+                monster.receiveDamage(shooter.getAtk());
+                active = false;
                 break;
             }
         }
-    }
 
-    @Override
-    public void draw(Graphics2D g2) {
-        if (alive) {
-            int screenX = worldX - gp.player.worldX + gp.player.screenX;
-            int screenY = worldY - gp.player.worldY + gp.player.screenY;
-
-            // Draw the projectile if it's within the screen
-            if (worldX + gp.tileSize > gp.player.worldX - gp.player.screenX &&
-                worldX - gp.tileSize < gp.player.worldX + gp.player.screenX &&
-                worldY + gp.tileSize > gp.player.worldY - gp.player.screenY &&
-                worldY - gp.tileSize < gp.player.worldY + gp.player.screenY) {
-
-                g2.drawImage(image, screenX, screenY, gp.tileSize / 2, gp.tileSize / 2, null);
-            }
+        // Deactivate if range exceeded
+        if(distanceTravelled >= range) {
+            active = false;
         }
     }
+
+    public void draw(Graphics2D g2) {
+        if(image != null && active) {
+            int screenX = worldX - gp.player.getWorldX() + gp.player.getScreenX();
+            int screenY = worldY - gp.player.getWorldY() + gp.player.getScreenY();
+            g2.drawImage(image, screenX, screenY, width, height, null); // Adjust size as needed
+        }
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    // Getters for position and dimensions
+    public int getWorldX() { return worldX; }
+    public int getWorldY() { return worldY; }
+    public int getWidth() { return width; }
+    public int getHeight() { return height; }
+
+    // Collision detection flag
+    private boolean collisionDetected = false;
+    public void setCollisionDetected(boolean collisionDetected) {
+        this.collisionDetected = collisionDetected;
+    }
+    public boolean collisionDetected() {
+        return collisionDetected;
+    }
+
 }

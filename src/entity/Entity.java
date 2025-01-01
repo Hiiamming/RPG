@@ -5,92 +5,131 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import main.GamePanel;
 
-public class Entity {
-    GamePanel gp;
+public abstract class Entity implements Attackable {
+    protected GamePanel gp;
 
-    public int worldX, worldY; // spawn position
-    public int speed;
+    protected int worldX, worldY; // Position
+    protected int speed;
+    protected Direction direction; // Using Direction enum
 
-    public BufferedImage up1, up2, down3, down1, down2, left1, left2, right1, right2;
-    public String direction;
+    protected BufferedImage up1, up2, down1, down2, left1, left2, right1, right2;
+    protected int spriteCounter = 0;
+    protected int spriteNum = 1;
 
-    public int spriteCounter = 0;
-    public int spriteNum = 1;
+    protected Rectangle solidArea;
+    protected boolean collisionOn = false;
+    protected boolean isDead = false;
 
-    public Rectangle solidArea;
-    public boolean collisionOn = false;
-    public boolean isDead = false; // Add this flag to check if the entity is dead
+    // Stats
+    protected int maxLife;
+    protected int life;
+    protected int atk;
+    protected int def;
+    protected int maxMana;
+    protected int mana;
+    protected int maxExp;
+    protected int exp;
+    protected int level;
 
-    // Player and Monster status
-    public int maxLife;
-    public int life;
-    public int atk;
-    public int def;
-    public int maxMana;
-    public int Mana;
-    public int maxExp;
-    public int exp;
-    public int level;
+    // For collision detection
+    protected boolean collisionDetected = false;
 
     public Entity(GamePanel gp) {
         this.gp = gp;
     }
 
-    // Method to update the entity (to be overridden by subclasses)
-    public void update() {
-        // Default behavior (can be overridden)
-    }
+    // Abstract methods to be implemented by subclasses
+    public abstract void update();
+    public abstract void draw(Graphics2D g2);
+    public abstract String getName();
 
-    // Method to draw the entity (to be overridden by subclasses)
-    public void draw(Graphics2D g2) {
-        // Default behavior (can be overridden)
-    }
 
-    public void attackPlayer() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'attackPlayer'");
-    }
-
+    
+    @Override
     public void receiveDamage(int damage) {
         int actualDamage = damage - this.def;
-        if (actualDamage < 0) {
-            actualDamage = 0;
-        }
+        if (actualDamage < 0) actualDamage = 0; // Ensure damage is not negative
         life -= actualDamage;
-        if (life < 0) {
-            life = 0;
-        }
-        System.out.println("Entity receives " + actualDamage + " damage! Current life: " + life);
-
-        if (life <= 0) {
-            die();
-        }
+        if (life < 0) life = 0;
+        System.out.println(getName() + " receives " + actualDamage + " damage! Current life: " + life);
+    
+        if (life <= 0) die();
     }
+
+    @Override
+    public abstract void attack(Entity target);
 
     public void die() {
-        System.out.println("Entity has died!");
+        System.out.println(getName() + " has died!");
         isDead = true;
-        // Handle death (e.g., remove from game, play death animation, etc.)
     }
 
-    public void gainExp(int amount) {
-        exp += amount;
-        if (exp >= maxExp) {
-            levelUp();
+    // Getters and Setters
+    public int getWorldX() { 
+        return worldX; 
+    }
+    public int getWorldY() { 
+        return worldY; 
+    }
+    public void setWorldX(int worldX) { 
+        this.worldX = worldX;
+    }
+    public void setWorldY(int worldY) { 
+        this.worldY = worldY;
+    }
+    public int getSpeed() { 
+        return speed; 
+    }
+    public void setSpeed(int speed) { 
+        this.speed = speed; 
+    }
+    public Direction getDirection() { 
+        return direction; 
+    }
+    public void setDirection(Direction direction) { 
+        if(direction != null) {
+            this.direction = direction;
+        } else {
+            System.out.println("Attempted to set null direction. Defaulting to DOWN.");
+            this.direction = Direction.DOWN;
         }
     }
-
-    public void levelUp() {
-        level++;
-        exp = 0;
-        maxExp = (int) (maxExp * 1.5); // Increase max experience needed for next level
-        maxLife += 10; // Increase max life
-        life = maxLife; // Heal to full life
-        atk += 2; // Increase attack
-        def += 1; // Increase defense
-        maxMana += 5; // Increase max mana
-        Mana = maxMana; // Restore mana
-        System.out.println("Level Up! You are now level " + level);
+    public boolean isDead() { 
+        return isDead; 
     }
 
+    // Getters and Setters for Stats
+    public int getMaxLife() { return maxLife; }
+    public void setMaxLife(int maxLife) { this.maxLife = maxLife; }
+
+    public int getLife() { return life; }
+    public void setLife(int life) { this.life = life; }
+
+    public int getAtk() { return atk; }
+    public void setAtk(int atk) { this.atk = atk; }
+
+    public int getDef() { return def; }
+    public void setDef(int def) { this.def = def; }
+
+    public int getMaxMana() { return maxMana; }
+    public void setMaxMana(int maxMana) { this.maxMana = maxMana; }
+
+    public int getMana() { return mana; }
+    public void setMana(int mana) { this.mana = mana; }
+
+    public int getMaxExp() { return maxExp; }
+    public void setMaxExp(int maxExp) { this.maxExp = maxExp; }
+
+    public int getExp() { return exp; }
+    public void setExp(int exp) { this.exp = exp; }
+
+    public int getLevel() { return level; }
+    public void setLevel(int level) { this.level = level; }
+
+    public boolean isCollisionOn() { return collisionOn; }
+    public void setCollisionOn(boolean collisionOn) { this.collisionOn = collisionOn; }
+
+    public Rectangle getSolidArea() {
+        return solidArea;
+    }
 }

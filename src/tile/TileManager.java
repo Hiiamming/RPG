@@ -9,12 +9,13 @@ import java.io.InputStreamReader;
 import javax.imageio.ImageIO;
 
 import entity.Slime;
+import entity.SkeletonBoss;
 import main.GamePanel;
 
 public class TileManager {
     
     GamePanel gp;
-    public Tile[] tile; // number of blocks
+    public Tile[] tile; // Array to hold different tile types
     public int mapTileNum[][];
     
     public TileManager(GamePanel gp)  {
@@ -29,8 +30,10 @@ public class TileManager {
         
     public void getTileImage()  {
         try {
+            // Define tiles with their images and collision properties
             tile[0] = new Tile();
             tile[0].image = ImageIO.read(getClass().getResourceAsStream("/tiles/grass.png"));
+            tile[0].collision = false;
             
             tile[1] = new Tile();
             tile[1].image = ImageIO.read(getClass().getResourceAsStream("/tiles/stone.png"));
@@ -42,59 +45,55 @@ public class TileManager {
 
             tile[3] = new Tile();
             tile[3].image = ImageIO.read(getClass().getResourceAsStream("/tiles/dirt.png"));
+            tile[3].collision = false;
             
             tile[4] = new Tile();
             tile[4].image = ImageIO.read(getClass().getResourceAsStream("/tiles/sand.png"));
+            tile[4].collision = false;
             
-            // Define tile[5] as a special tile representing a monster spawn point
+            // Define tile[5] as a Slime spawn point
             tile[5] = new Tile();
             tile[5].image = ImageIO.read(getClass().getResourceAsStream("/tiles/grass.png")); // Use grass or any other tile
-            tile[5].collision = false; // Monster can walk on it
+            tile[5].collision = false; // Monsters can walk on it
+            
+            // Define tile[6] as a SkeletonBoss spawn point
+            tile[6] = new Tile();
+            tile[6].image = ImageIO.read(getClass().getResourceAsStream("/tiles/grass.png")); // Use grass or any other tile
+            tile[6].collision = false; // Monsters can walk on it
         } catch(IOException e)  {
             e.printStackTrace();
         }
     }
 
-    public void loadMap(String filePath)  {
-        try  {
+    public void loadMap(String filePath) {
+        try {
             InputStream is = getClass().getResourceAsStream(filePath);
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
-            
+    
             int col = 0;
             int row = 0;
-            
-            while(col < gp.maxWorldCol && row < gp.maxWorldRow)  {
-                
+    
+            while (col < gp.maxWorldCol && row < gp.maxWorldRow) {
                 String line = br.readLine();
-                
-                while(col < gp.maxWorldCol)  {
-                    
-                    String numbers[] = line.split(" ");
-                    
+                if (line == null) break;
+    
+                String[] numbers = line.split(" ");
+    
+                while (col < gp.maxWorldCol) {
                     int num = Integer.parseInt(numbers[col]);
-                    
                     mapTileNum[col][row] = num;
-
-                    // Check for monster spawn points
-                    if(num == 5) {
-                        // Spawn a Slime at this position
-                        Slime slime = new Slime(gp, col, row);
-                        gp.monsters.add(slime);
-                    }
-
+    
                     col++;
                 }
-                if(col == gp.maxWorldCol)  {
+                if (col == gp.maxWorldCol) {
                     col = 0;
                     row++;
                 }
             }
-            br.close();
-
-        } catch (Exception e)  {
+        } catch (IOException e) {
             e.printStackTrace();
         }
-    }		
+    }	
     
     public void draw(Graphics2D g2)  {
         int worldCol = 0;
@@ -107,13 +106,14 @@ public class TileManager {
             int worldX = worldCol * gp.tileSize;
             int worldY = worldRow * gp.tileSize;
             
-            int screenX = worldX - gp.player.worldX + gp.player.screenX;
-            int screenY = worldY - gp.player.worldY + gp.player.screenY;
+            int screenX = worldX - gp.player.getWorldX() + gp.player.getScreenX();
+            int screenY = worldY - gp.player.getWorldY() + gp.player.getScreenY();
             
-            if (worldX + gp.tileSize > gp.player.worldX - gp.player.screenX &&
-                worldX - gp.tileSize < gp.player.worldX + gp.player.screenX &&
-                worldY + gp.tileSize > gp.player.worldY - gp.player.screenY &&
-                worldY - gp.tileSize < gp.player.worldY + gp.player.screenY)  {
+            // Render tiles within the visible screen area
+            if (worldX + gp.tileSize > gp.player.getWorldX() - gp.player.getScreenX() &&
+                worldX - gp.tileSize < gp.player.getWorldX() + gp.player.getScreenX() &&
+                worldY + gp.tileSize > gp.player.getWorldY() - gp.player.getScreenY() &&
+                worldY - gp.tileSize < gp.player.getWorldY() + gp.player.getScreenY())  {
                 
                 g2.drawImage(tile[tileNum].image, screenX, screenY, gp.tileSize, gp.tileSize, null);
             }

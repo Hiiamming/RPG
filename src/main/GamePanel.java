@@ -14,9 +14,13 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
+import entity.Crusader;
+import entity.Hero;
+import entity.Sorceress;
 import entity.Entity;
-import entity.Player;
 import entity.Slime;
+import entity.SkeletonBoss;
+import entity.ProjectileManager;
 import tile.TileManager;
 
 public class GamePanel extends JPanel implements Runnable, KeyListener {
@@ -36,11 +40,12 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     public int gameTime = 0; // Track elapsed time in frames
 
     // Game Components
-    TileManager tileM = new TileManager(this);
+    public TileManager tileM = new TileManager(this);
     KeyHandler keyH = new KeyHandler();
     public Thread gameThread;
     public CollisionChecker cChecker = new CollisionChecker(this);
-    public Player player; // Initialized after hero selection
+    public Hero player; // Now of type Hero
+    public ProjectileManager projectileManager = new ProjectileManager(this); // Manager for projectiles
     public UI ui = new UI(this);
     int FPS = 60;
 
@@ -54,7 +59,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     public int gameState = STATE_SELECTION; // Start with hero selection
 
     // Hero Selection
-    List<String> heroes = Arrays.asList("Sorceress", "Warrior");
+    List<String> heroes = Arrays.asList("Sorceress", "Crusader");
     int selectedHeroIndex = 0;
 
     public GamePanel() {
@@ -66,27 +71,20 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         this.setFocusable(true);
         this.requestFocusInWindow(); // Ensure the panel has focus
 
-        // Initialize monsters
+        // Monsters are now spawned via TileManager.loadMap()
         setupMonsters();
     }
 
-
-    // spawn monsters
     public void setupMonsters() {
-        // Example: Spawn two Slimes at different locations
         Slime slime1 = new Slime(this, 10, 10);
         monsters.add(slime1);
-
-        Slime slime2 = new Slime(this, 11, 11);
+    
+        Slime slime2 = new Slime(this, 11, 12);
         monsters.add(slime2);
 
-        Slime slime3 = new Slime(this, 9, 10);
-        monsters.add(slime3);
+        SkeletonBoss skeletonBoss = new SkeletonBoss(this, 9, 9);
+        monsters.add(skeletonBoss);
 
-        Slime slime4 = new Slime(this, 9, 11);
-        monsters.add(slime4);
-
-        // Add more Slimes as needed
     }
 
     public void startGameThread() {
@@ -100,6 +98,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         double nextDrawTime = System.nanoTime() + drawInterval;
 
         while (gameThread != null) {
+
             // 1. Update: Update information such as character positions
             update();
 
@@ -128,6 +127,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         if (gameState == STATE_PLAYING && player != null) {
             player.update();
     
+            // Update all projectiles
+            projectileManager.updateProjectiles();
+
             // Update all monsters
             Iterator<Entity> iterator = monsters.iterator();
             while (iterator.hasNext()) {
@@ -135,9 +137,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 monster.update();
     
                 // Remove dead monsters
-                if (monster.isDead) {
+                if (monster.isDead()) {
                     iterator.remove();
-                    System.out.println("Monster removed from the list!"); // Debugging
+                    System.out.println(monster.getName() + " removed from the list!"); // Debugging
                 }
             }
         }
@@ -154,13 +156,19 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
             drawHeroSelection(g2);
         } else if (gameState == STATE_PLAYING) {
             tileM.draw(g2);
-            player.draw(g2);
+            if (player != null) {
+                player.draw(g2);
+            }
 
             // Draw all monsters
             for (Entity monster : monsters) {
                 monster.draw(g2);
             }
 
+            // Draw all projectiles
+            projectileManager.drawProjectiles(g2);
+
+            // Draw UI
             ui.draw(g2);
         } else if (gameState == STATE_GAME_OVER) {
             drawGameOver(g2);
@@ -226,7 +234,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         int textWidth = g2.getFontMetrics().stringWidth(text);
         g2.drawString(text, (screenWidth - textWidth) / 2, screenHeight / 2);
 
-        // Optionally, add instructions to restart or exit
+        // Instructions to restart
         g2.setFont(new Font("Arial", Font.PLAIN, 40));
         String restartText = "Press Enter to Restart";
         int restartWidth = g2.getFontMetrics().stringWidth(restartText);
@@ -272,7 +280,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
     public void startGameWithHero(int heroIndex) {
         if (heroIndex >= 0 && heroIndex < heroes.size()) {
             String heroType = heroes.get(heroIndex);
-            player = new Player(this, keyH, heroType); // Instantiate Player with the selected hero type
+            switch(heroType.toLowerCase()) {
+                case "sorceress":
+                    player = new Sorceress(this, keyH);
+                    break;
+                case "crusader":
+                    player = new Crusader(this, keyH);
+                    break;
+                default:
+                    System.out.println("Unknown hero type selected.");
+                    break;
+            }
             gameState = STATE_PLAYING;
         } else {
             System.out.println("Invalid hero selection.");
@@ -283,13 +301,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         // Reset player
         player = null;
 
-        // Reset monsters
+        // Reset monsters by reloading the map
         monsters.clear();
-        setupMonsters();
+        tileM.loadMap("/maps/world01.txt"); // Reload map to respawn monsters
+
+        // Reset projectiles
+        projectileManager.clearProjectiles();
 
         // Reset game state
         gameState = STATE_SELECTION;
 
         // Reset UI elements if necessary
+        // ui.reset();
     }
 }
