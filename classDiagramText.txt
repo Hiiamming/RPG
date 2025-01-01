@@ -1,0 +1,350 @@
+@startuml
+
+package entity {
+    abstract class Entity {
+        - GamePanel gp
+        - int worldX
+        - int worldY
+        - int speed
+        - Direction direction
+        - BufferedImage up1, up2, down1, down2, left1, left2, right1, right2
+        - int spriteCounter
+        - int spriteNum
+        - Rectangle solidArea
+        - boolean collisionOn
+        - boolean isDead
+        - int maxLife
+        - int life
+        - int atk
+        - int def
+        - int maxMana
+        - int mana
+        - int maxExp
+        - int exp
+        - int level
+        + void update()
+        + void draw(Graphics2D g2)
+        + void receiveDamage(int damage)
+        + void attack(Entity target)
+        + void die()
+        + int getWorldX()
+        + int getWorldY()
+        + void setWorldX(int worldX)
+        + void setWorldY(int worldY)
+        + int getSpeed()
+        + void setSpeed(int speed)
+        + Direction getDirection()
+        + void setDirection(Direction direction)
+        + boolean isDead()
+        + int getMaxLife()
+        + void setMaxLife(int maxLife)
+        + int getLife()
+        + void setLife(int life)
+        + int getAtk()
+        + void setAtk(int atk)
+        + int getDef()
+        + void setDef(int def)
+        + int getMaxMana()
+        + void setMaxMana(int maxMana)
+        + int getMana()
+        + void setMana(int mana)
+        + int getMaxExp()
+        + void setMaxExp(int maxExp)
+        + int getExp()
+        + void setExp(int exp)
+        + int getLevel()
+        + void setLevel(int level)
+        + boolean isCollisionOn()
+        + void setCollisionOn(boolean collisionOn)
+        + Rectangle getSolidArea()
+    }
+
+    interface Attackable {
+        + void attack(Entity target)
+        + void receiveDamage(int damage)
+    }
+
+    abstract class Hero extends Entity {
+        - KeyHandler keyH
+        - int screenX
+        - int screenY
+        - int maxExp
+        - int exp
+        - int level
+        - Skill specialSkill
+        - String heroType
+        + void gainExp(int gainedExp)
+        + void levelUp()
+        + void attack(Entity target)
+        + int getScreenX()
+        + int getScreenY()
+        + void draw(Graphics2D g2)
+        + void activateSpecialSkill()
+    }
+
+    class Crusader extends Hero {
+        - int buffDuration
+        - int buffCounter
+        - boolean isBuffed
+        + void setDefaultValues()
+        + void getHeroImages()
+        + void loadSkills()
+        + void update()
+        + void activateSpecialSkill()
+        + void removeBuff()
+        + String getName()
+    }
+
+    class Sorceress extends Hero {
+        - int attackCooldown
+        - int attackCounter
+        + void setDefaultValues()
+        + void getHeroImages()
+        + void loadSkills()
+        + void update()
+        + void activateSpecialSkill()
+        + String getName()
+    }
+
+    abstract class Monster extends Entity {
+        - int attackDamage
+        - int attackRange
+        - int attackCooldown
+        - int attackCounter
+        - int chaseRange
+        - int aiCounter
+        - int aiInterval
+        + void setDefaultValues()
+        + void getMonsterImage()
+        + void update()
+        + void decideNextAction()
+        + void chaseHero()
+        + void patrol()
+        + void move()
+        + Direction getRandomDirection()
+        + double getDistance(int x1, int y1, int x2, int y2)
+        + void attack(Entity target)
+        + String getName()
+        + void die()
+    }
+
+    class Slime extends Monster {
+        + void setupStats()
+        + void setDefaultValues()
+        + void getMonsterImage()
+        + void update()
+        + void draw(Graphics2D g2)
+        + String getName()
+        + void die()
+    }
+
+    class SkeletonBoss extends Monster {
+        - int specialAttackCooldown
+        - int specialAttackCounter
+        + void setupStats()
+        + void setDefaultValues()
+        + void getMonsterImage()
+        + void update()
+        + void performSpecialAttack()
+        + void draw(Graphics2D g2)
+        + String getName()
+        + void die()
+    }
+
+    class Projectile {
+        - GamePanel gp
+        - Hero shooter
+        - Direction direction
+        - int speed
+        - int worldX, worldY
+        - BufferedImage image
+        - boolean active
+        - int range
+        - int distanceTravelled
+        - int width, height
+        - Rectangle solidArea
+        + void update()
+        + void draw(Graphics2D g2)
+        + boolean isActive()
+        + int getWorldX()
+        + int getWorldY()
+        + int getWidth()
+        + int getHeight()
+        + void setCollisionDetected(boolean collisionDetected)
+        + boolean collisionDetected()
+    }
+
+    class ProjectileManager {
+        - List<Projectile> projectiles
+        - GamePanel gp
+        + void addProjectile(Projectile projectile)
+        + void updateProjectiles()
+        + void drawProjectiles(Graphics2D g2)
+        + void clearProjectiles()
+        + List<Projectile> getProjectiles()
+        + void setProjectiles(List<Projectile> projectiles)
+    }
+
+    interface Skill {
+        + void activate()
+    }
+
+    class BuffStatsSkill implements Skill {
+        - Crusader crusader
+        - int buffDuration
+        - int originalAtk
+        - int originalDef
+        + void activate()
+        + void removeBuff()
+    }
+
+    class ShootProjectileSkill implements Skill {
+        - GamePanel gp
+        - Sorceress sorceress
+        - int manaCost
+        - int cooldown
+        - int lastUsed
+        + void activate()
+    }
+}
+
+package main {
+    class GamePanel {
+        - int originalTileSize
+        - int scale
+        - int tileSize
+        - int maxScreenCol
+        - int maxScreenRow
+        - int screenWidth
+        - int screenHeight
+        - int maxWorldCol
+        - int maxWorldRow
+        - int worldWidth
+        - int worldHeight
+        - int gameTime
+        - TileManager tileM
+        - KeyHandler keyH
+        - Thread gameThread
+        - CollisionChecker cChecker
+        - Hero player
+        - ProjectileManager projectileManager
+        - UI ui
+        - int FPS
+        - List<Entity> monsters
+        - int STATE_SELECTION
+        - int STATE_PLAYING
+        - int STATE_GAME_OVER
+        - int gameState
+        - List<String> heroes
+        - int selectedHeroIndex
+        + void setupMonsters()
+        + void startGameThread()
+        + void run()
+        + void update()
+        + void paintComponent(Graphics g)
+        + void drawHeroSelection(Graphics2D g2)
+        + void drawGameOver(Graphics2D g2)
+        + void keyPressed(KeyEvent e)
+        + void keyReleased(KeyEvent e)
+        + void keyTyped(KeyEvent e)
+        + void startGameWithHero(int heroIndex)
+        + void restartGame()
+    }
+
+    class KeyHandler {
+        - boolean upPressed, downPressed, leftPressed, rightPressed, attackPressed, shootPressed, buffPressed
+        + void keyPressed(KeyEvent e)
+        + void keyReleased(KeyEvent e)
+        + void keyTyped(KeyEvent e)
+    }
+
+    class CollisionChecker {
+        - GamePanel gp
+        + void checkTile(Entity entity)
+        + boolean checkEntityCollision(Entity entity1, Entity entity2)
+        + void checkProjectileCollision(Projectile projectile)
+        + boolean checkEntityCollision(Projectile projectile, Entity entity)
+    }
+
+    class UI {
+        - GamePanel gp
+        - Font arial_40
+        - long startTime
+        - long elapsedTime
+        + void draw(Graphics2D g2)
+    }
+
+    class Main {
+        + void main(String[] args)
+    }
+}
+
+package tile {
+    class Tile {
+        - BufferedImage image
+        - boolean collision
+    }
+
+    class TileManager {
+        - GamePanel gp
+        - Tile[] tile
+        - int[][] mapTileNum
+        + void getTileImage()
+        + void loadMap(String filePath)
+        + void draw(Graphics2D g2)
+    }
+}
+
+Entity <|-- Hero
+Entity <|-- Monster
+Hero <|-- Crusader
+Hero <|-- Sorceress
+Monster <|-- Slime
+Monster <|-- SkeletonBoss
+Attackable <|.. Entity
+Skill <|.. BuffStatsSkill
+Skill <|.. ShootProjectileSkill
+GamePanel "1" *-- "1" TileManager
+GamePanel "1" *-- "1" KeyHandler
+GamePanel "1" *-- "1" CollisionChecker
+GamePanel "1" *-- "1" UI
+GamePanel "1" *-- "1" ProjectileManager
+GamePanel "1" *-- "many" Entity
+ProjectileManager "1" *-- "many" Projectile
+Hero "1" *-- "1" Skill
+Crusader "1" *-- "1" BuffStatsSkill
+Sorceress "1" *-- "1" ShootProjectileSkill
+
+@enduml
+Explanation of Relationships:
+Inheritance (<|--):
+
+Entity is the parent class of Hero and Monster.
+
+Hero is the parent class of Crusader and Sorceress.
+
+Monster is the parent class of Slime and SkeletonBoss.
+
+Interface Implementation (<|..):
+
+Entity implements the Attackable interface.
+
+BuffStatsSkill and ShootProjectileSkill implement the Skill interface.
+
+Aggregation (*--):
+
+GamePanel aggregates TileManager, KeyHandler, CollisionChecker, UI, ProjectileManager, and Entity.
+
+ProjectileManager aggregates Projectile.
+
+Hero aggregates Skill.
+
+Crusader aggregates BuffStatsSkill.
+
+Sorceress aggregates ShootProjectileSkill.
+
+Attributes and Methods:
+
+Each class lists its attributes and methods, including getters and setters where applicable.
+
+This .asta file can be used with tools like PlantUML to generate a visual class diagram. Let me know if you need further adjustments!
