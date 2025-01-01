@@ -15,6 +15,7 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import entity.Entity;
+import entity.Iblee;
 import entity.Player;
 import entity.Slime;
 import tile.TileManager;
@@ -86,7 +87,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         Slime slime4 = new Slime(this, 9, 11);
         monsters.add(slime4);
 
-        // Add more Slimes as needed
+        Iblee iblee = new Iblee(this, 12, 10);
+        monsters.add(iblee);
     }
 
     public void startGameThread() {
@@ -128,7 +130,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
         if (gameState == STATE_PLAYING && player != null) {
             player.update();
     
-            // Update all monsters
+            // Use an Iterator to safely remove monsters
             Iterator<Entity> iterator = monsters.iterator();
             while (iterator.hasNext()) {
                 Entity monster = iterator.next();
@@ -137,7 +139,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
                 // Remove dead monsters
                 if (monster.isDead) {
                     iterator.remove();
-                    System.out.println("Monster removed from the list!"); // Debugging
+                    System.out.println("Monster removed from the list!");
                 }
             }
         }
